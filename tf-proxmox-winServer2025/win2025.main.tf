@@ -70,11 +70,28 @@ data "cloudinit_config" "example" {
     filename     = "initialize-disks.ps1"
     content_type = "text/x-shellscript"
     content      = <<-EOF
+      # Expand the OS partition to the maximum supported size when additional
+      # virtual disk capacity exists after template clone resizing.
+      Write-Output "Checking if OS volume (C:) can be expanded ..."
+      $osPartition = Get-Partition -DriveLetter C -ErrorAction SilentlyContinue
+      if ($osPartition) {
+        $supportedSize = Get-PartitionSupportedSize -DriveLetter C -ErrorAction SilentlyContinue
+        if ($supportedSize -and $supportedSize.SizeMax -gt $osPartition.Size) {
+          Write-Output "Extending C: from $($osPartition.Size) to $($supportedSize.SizeMax) bytes..."
+          Resize-Partition -DriveLetter C -Size $supportedSize.SizeMax -ErrorAction Stop
+          Write-Output "Successfully extended C: to maximum supported size."
+        } else {
+          Write-Output "C: is already at maximum supported size."
+        }
+      } else {
+        Write-Output "OS partition C: not found; skipping resize."
+      }
       #ps1_sysnative
       # initialize all (non-initialized) disks with a single NTFS partition.
       # NB we have this script because disk initialization is not yet supported by cloudbase-init.
       # NB the output of this script appears on the cloudbase-init.log file when the
       #    debug mode is enabled, otherwise, you will only have the exit code.
+      Write-Output "Initializing all uninitialized disks (if any) ..."
       Get-Disk `
         | Where-Object {$_.PartitionStyle -eq 'RAW'} `
         | ForEach-Object {
@@ -249,7 +266,7 @@ resource "proxmox_virtual_environment_vm" "clone_edited_template" {
     #type  = "host"
     #type  = "x86-64-v2-AES"
     type = var.cpu_type_host ? "host" : "x86-64-v2-AES"
-    cores = 2
+    cores = var.cpu_core_count
   }
   memory {
     dedicated = endswith(var.memory_size, "G") ? 1024 * tonumber(replace(var.memory_size, "G", "")) : ( endswith(var.memory_size, "M") ? tonumber(replace(var.memory_size, "M", "")) : tonumber(var.memory_size) )
@@ -269,9 +286,18 @@ resource "proxmox_virtual_environment_vm" "clone_edited_template" {
     discard     = "on"
     size        = endswith(var.disk_size_boot, "G") ? tonumber(replace(var.disk_size_boot, "G", "")) : ( endswith(var.disk_size_boot, "M") ? tonumber(replace(var.disk_size_boot, "M", "")) / 1024 : tonumber(var.disk_size_boot) / 1024 )
   }
-  ## Add additional Disks here, if required.
-  ##
-  ##
+  dynamic "disk" {
+    for_each = var.additional_disks
+    content {
+      datastore_id = coalesce(try(disk.value.datastore_id, null), var.proxmox_datastore_id)
+      interface    = disk.value.interface
+      file_format  = try(disk.value.file_format, "qcow2")
+      iothread     = try(disk.value.iothread, true)
+      ssd          = try(disk.value.ssd_enabled, false)
+      discard      = try(disk.value.discard, "on")
+      size         = endswith(disk.value.size, "G") ? tonumber(replace(disk.value.size, "G", "")) : (endswith(disk.value.size, "M") ? tonumber(replace(disk.value.size, "M", "")) / 1024 : tonumber(disk.value.size) / 1024)
+    }
+  }
   agent {
     enabled = true
     trim    = true
@@ -300,16 +326,16 @@ resource "proxmox_virtual_environment_vm" "clone_edited_template" {
   }
 }
 
-resource "time_sleep" "wait_7_minutes" {
+resource "time_sleep" "wait_12_minutes" {
   depends_on = [proxmox_virtual_environment_vm.clone_edited_template]
-  # 12 minutes sleep. I have a slow Proxmox Host :(
-  create_duration = "7m"
+  # 12 minutes sleep. Give enough time to finish processing.
+  create_duration = "12m"
 }
 
 # # NB this can only connect after about 3m15s (because the ssh service in the
 # #    windows base image is configured as "delayed start").
 resource "null_resource" "ssh_into_vm" {
-  depends_on = [time_sleep.wait_7_minutes]
+  depends_on = [time_sleep.wait_12_minutes]
   provisioner "remote-exec" {
     connection {
       target_platform = "windows"

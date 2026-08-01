@@ -128,14 +128,60 @@ variable "cpu_core_count" {
 
 variable "memory_size" {
   type = string
+  validation {
+    condition     = (endswith(var.memory_size, "G") ? 1024 * tonumber(replace(var.memory_size, "G", "")) : ( endswith(var.memory_size, "M") ? tonumber(replace(var.memory_size, "M", "")) : tonumber(var.memory_size) ) ) >= 4 * 1024
+    error_message = "memory_size must be a string ending with 'M' or 'G', and at least 4G, e.g., '4096M' or '4G'."
+  }
 }
 
 variable "disk_size_boot" {
   type = string
+  validation {
+    condition     = (endswith(var.disk_size_boot, "G") ? tonumber(replace(var.disk_size_boot, "G", "")) : ( endswith(var.disk_size_boot, "M") ? tonumber(replace(var.disk_size_boot, "M", "")) : tonumber(var.disk_size_boot) ) ) >= 32
+    error_message = "disk_size_boot must be a string ending with 'M' or 'G', and at least 32G, e.g., '32G' or '32768M'."
+  }
 }
 
 variable "disk_boot_ssd_enabled" {
   type = bool
+}
+
+variable "additional_disks" {
+  description = "Optional empty data disks to add during clone. Example interface values: sata1, sata2, scsi1."
+  type = list(object({
+    interface    = string
+    size         = string
+    ssd_enabled  = optional(bool, false)
+    datastore_id = optional(string)
+    file_format  = optional(string, "qcow2")
+    discard      = optional(string, "on")
+    iothread     = optional(bool, true)
+  }))
+  default = []
+
+  validation {
+    condition = alltrue([
+      for d in var.additional_disks :
+      d.interface != "sata0"
+    ])
+    error_message = "additional_disks interfaces must not use sata0 because it is reserved for the boot disk."
+  }
+
+  validation {
+    condition = length(distinct([
+      for d in var.additional_disks :
+      lower(d.interface)
+    ])) == length(var.additional_disks)
+    error_message = "additional_disks interfaces must be unique (for example: sata1, sata2, scsi1)."
+  }
+
+  validation {
+    condition = alltrue([
+      for d in var.additional_disks :
+      (endswith(d.size, "G") ? tonumber(replace(d.size, "G", "")) : (endswith(d.size, "M") ? tonumber(replace(d.size, "M", "")) / 1024 : tonumber(d.size) / 1024)) >= 1
+    ])
+    error_message = "Each additional_disks.size must be at least 1G, e.g. '20G' or '20480M'."
+  }
 }
 
 variable "cpu_type_host" {

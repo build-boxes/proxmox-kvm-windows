@@ -30,11 +30,26 @@ vm_fixed_ip="192.168.0.105/24"
 vm_fixed_gateway="192.168.0.1"
 vm_fixed_dns=["192.168.0.1"]
 vm_mac_address="DE:AD:BE:EF:01:03"
-cpu_core_count=2
-memory_size="4096M"
-disk_size_boot="32G"
-disk_boot_ssd_enabled=false
 # cpu_type_host=true for Virtualization inside the VM, can slow down QEMU performance.
 cpu_type_host=false
 # podman_installed=true only when cpu_type_host=true.
 podman_installed=false
+cpu_core_count=2
+memory_size="4096M"
+disk_size_boot="32G"
+disk_boot_ssd_enabled=false
+# Optional: add empty data disks during clone.
+# interface values must be unique and must not use sata0 (boot disk).
+additional_disks=[
+	{
+		interface="sata1"
+		size="50G"
+		ssd_enabled=false
+	},
+	{
+		interface="sata2"
+		size="100G"
+		ssd_enabled=true
+	}
+]
+
