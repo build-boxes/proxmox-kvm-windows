@@ -18,7 +18,7 @@ terraform {
     # see https://github.com/bpg/terraform-provider-proxmox
     proxmox = {
       source  = "bpg/proxmox"
-      version = "0.75.0"
+      version = "0.93.0"
     }
     time = {
           source = "hashicorp/time"
@@ -41,80 +41,19 @@ provider "proxmox" {
   }
 }
 
-variable "proxmox_node_name" {
-  type    = string
-  default = "pve"
-}
-
-variable "proxmox_node_address" {
-  type = string
-}
-
-variable "PROXMOX_VE_ENDPOINT" {
-    type = string
-    default = "https://192.168.4.20:8006/api2/json"
-}
-
-variable "PROXMOX_VE_USERNAME" {
-    type = string
-    sensitive = true
-    default = "admin@pve"
-}
-
-variable "PROXMOX_VE_PASSWORD" {
-    type = string
-    sensitive = true
-    default = "PassW0rd123!!"
-}
-
-variable "PROXMOX_VE_INSECURE" {
-    type = bool
-    default = false
-}
-
-
-variable "prefix" {
-  # This is used to rename the host to this name.description
-  # also used as a prefix for text and log files names.
-  type    = string
-  default = "eagle01"
-}
-
-variable "pub_key_file" {
-  type = string
-  default = "~/.ssh/id_rsa.pub"
-}
-
-variable "pvt_key_file" {
-  type = string
-  default = "~/.ssh/id_rsa"
-  sensitive = true
-}
-
-variable "superuser_username" {
-  type    = string
-  default = "terraform"
-}
-
-variable "superuser_password" {
-  type      = string
-  sensitive = true
-  # NB the password will be reset by the cloudbase-init SetUserPasswordPlugin plugin.
-  # NB this value must meet the Windows password policy requirements.
-  #    see https://docs.microsoft.com/en-us/windows/security/threat-protection/security-policy-settings/password-must-meet-complexity-requirements
-  # Password with @ symbol has issues in cloudbase-init scripts escape-sequencing in terraform ".tf" files
-  default = "HeyH0Password"
-}
 
 # see https://registry.terraform.io/providers/bpg/proxmox/0.75.0/docs/data-sources/virtual_environment_vms
 data "proxmox_virtual_environment_vms" "windows_templates" {
-  tags = ["windows", "template", "winserver", "2025"]
+  tags = var.proxmox_vm_template_tags
+  node_name = var.proxmox_node_name
 }
 
 # see https://registry.terraform.io/providers/bpg/proxmox/0.75.0/docs/data-sources/virtual_environment_vm
 data "proxmox_virtual_environment_vm" "windows_template" {
-  node_name = data.proxmox_virtual_environment_vms.windows_templates.vms[0].node_name
-  vm_id     = data.proxmox_virtual_environment_vms.windows_templates.vms[0].vm_id
+  #node_name = data.proxmox_virtual_environment_vms.windows_templates.vms[0].node_name
+  #vm_id     = data.proxmox_virtual_environment_vms.windows_templates.vms[0].vm_id
+  node_name = local.template_vm.node_name
+  vm_id     = local.template_vm.vm_id  
 }
 
 # the virtual machine cloudbase-init cloud-config.
@@ -139,12 +78,12 @@ data "cloudinit_config" "example" {
       Get-Disk `
         | Where-Object {$_.PartitionStyle -eq 'RAW'} `
         | ForEach-Object {
-          Write-Host "Initializing disk #$($_.Number) ($($_.Size) bytes)..."
+          Write-Output "Initializing disk #$($_.Number) ($($_.Size) bytes)..."
           $volume = $_ `
             | Initialize-Disk -PartitionStyle MBR -PassThru `
             | New-Partition -AssignDriveLetter -UseMaximumSize `
             | Format-Volume -FileSystem NTFS -NewFileSystemLabel "disk$($_.Number)" -Confirm:$false
-          Write-Host "Initialized disk #$($_.Number) ($($_.Size) bytes) as $($volume.DriveLetter):."
+          Write-Output "Initialized disk #$($_.Number) ($($_.Size) bytes) as $($volume.DriveLetter):."
         }
       EOF
   }
@@ -160,7 +99,7 @@ data "cloudinit_config" "example" {
       #    debug mode is enabled, otherwise, you will only have the exit code.
       Start-Transcript -Append "C:\cloudinit-config-example.ps1.log"
       # Define the new password
-      $SecurePassword = ConvertTo-SecureString "${var.superuser_password}" -AsPlainText -Force
+      $SecurePassword = ConvertTo-SecureString "${var.administrator_new_password}" -AsPlainText -Force
       
       # Get the administrator account
       $AdminAccount = Get-LocalUser -Name "Administrator"
@@ -180,7 +119,7 @@ data "cloudinit_config" "example" {
       timezone: America/Toronto
       users:
         - name: ${jsonencode(var.superuser_username)}
-          passwd: ${jsonencode(var.superuser_password)}
+          passwd: ${jsonencode(var.superuser_new_password)}
           primary_group: Administrators
           # ssh_authorized_keys:
           #   - ${jsonencode(trimspace(file("${var.pub_key_file}")))}
@@ -203,7 +142,7 @@ data "cloudinit_config" "example" {
       EOF
   }
   part {
-    filename     = "example.ps1"
+    filename     = "CheckAndEnablewinRM.ps1"
     content_type = "text/x-shellscript"
     content      = <<-EOF
       #ps1_sysnative
@@ -230,6 +169,58 @@ data "cloudinit_config" "example" {
       dir env:
       Write-Title "TimeZone"
       Get-TimeZone
+      ## Check if WinRM is enabled
+      # 1. Ensure WinRM service is installed, active, and starts automatically
+      $service = Get-Service -Name WinRM -ErrorAction SilentlyContinue
+
+      if (-not $service) {
+          Write-Output "WinRM is not installed. Installing..." -ForegroundColor Yellow
+          Enable-PSRemoting -Force
+      } else {
+          Write-Output "WinRM is installed. Enforcing active status..." -ForegroundColor Cyan
+      }
+
+      Set-Service -Name WinRM -StartupType Automatic
+      Start-Service -Name WinRM -ErrorAction SilentlyContinue
+
+      # 2. Check if an HTTPS listener already exists
+      $httpsListener = Get-ChildItem -Path WSMan:\LocalHost\Listener | Where-Object { $_.Keys -contains "Transport=HTTPS" }
+
+      if (-not $httpsListener) {
+          Write-Output "No HTTPS listener found. Generating self-signed SSL certificate..." -ForegroundColor Yellow
+          
+          # Generate certificate utilizing the computer's local hostname
+          $hostname = $env:COMPUTERNAME
+          $cert = New-SelfSignedCertificate -DnsName $hostname -CertStoreLocation "Cert:\LocalMachine\My" -TextExtension @("2.5.29.37={text}1.3.6.1.5.5.7.3.1")
+          
+          Write-Output "Certificate created with Thumbprint: $($cert.Thumbprint)" -ForegroundColor Green
+
+          # Create the WSMan HTTPS listener mapping it to the new certificate
+          Write-Output "Creating WinRM HTTPS listener on Port 5986..." -ForegroundColor Yellow
+          New-Item -Path WSMan:\LocalHost\Listener -Transport HTTPS -Address * -CertificateThumbPrint $cert.Thumbprint -Force | Out-Null
+      } else {
+          Write-Output "WinRM HTTPS listener already exists." -ForegroundColor Green
+      }
+
+      # 3. Open Windows Firewall for TCP port 5986
+      Write-Output "Configuring Windows Firewall rule for WinRM HTTPS..." -ForegroundColor Yellow
+      $firewallRule = Get-NetFirewallRule -Name "WinRM-HTTPS-Inbound" -ErrorAction SilentlyContinue
+
+      if (-not $firewallRule) {
+          New-NetFirewallRule -Name "WinRM-HTTPS-Inbound" `
+                              -DisplayName "Windows Remote Management (HTTPS-In)" `
+                              -Description "Inbound rule for WinRM traffic over SSL/HTTPS." `
+                              -Direction Inbound `
+                              -LocalPort 5986 `
+                              -Protocol TCP `
+                              -Action Allow `
+                              -Profile Any | Out-Null
+          Write-Output "Firewall rule created successfully." -ForegroundColor Green
+      } else {
+          Write-Output "Firewall rule already exists." -ForegroundColor Green
+      }
+
+      Write-Output "WinRM HTTPS Configuration Complete!" -ForegroundColor Green
       EOF
   }
 }
@@ -237,7 +228,7 @@ data "cloudinit_config" "example" {
 # see https://registry.terraform.io/providers/bpg/proxmox/0.75.0/docs/resources/virtual_environment_file
 resource "proxmox_virtual_environment_file" "example_ci_user_data" {
   content_type = "snippets"
-  datastore_id = "local"
+  datastore_id = var.proxmox_datastore_id
   node_name    = var.proxmox_node_name
   source_raw {
     file_name = "${var.prefix}-ci-user-data.txt"
@@ -246,32 +237,37 @@ resource "proxmox_virtual_environment_file" "example_ci_user_data" {
 }
 
 # see https://registry.terraform.io/providers/bpg/proxmox/0.75.0/docs/resources/virtual_environment_vm
-resource "proxmox_virtual_environment_vm" "example" {
+resource "proxmox_virtual_environment_vm" "clone_edited_template" {
   name      = var.prefix
   node_name = var.proxmox_node_name
-  tags      = sort(["windows-2025", "example", "terraform"])
+  tags      = var.proxmox_vm_tags
   clone {
     vm_id = data.proxmox_virtual_environment_vm.windows_template.vm_id
     full  = true
   }
   cpu {
-    type  = "host"
+    #type  = "host"
     #type  = "x86-64-v2-AES"
+    type = var.cpu_type_host ? "host" : "x86-64-v2-AES"
     cores = 2
   }
   memory {
-    dedicated = 4 * 1024
+    dedicated = endswith(var.memory_size, "G") ? 1024 * tonumber(replace(var.memory_size, "G", "")) : ( endswith(var.memory_size, "M") ? tonumber(replace(var.memory_size, "M", "")) : tonumber(var.memory_size) )
   }
   network_device {
     bridge = "vmbr0"
+    mac_address = var.vm_mac_address
   }
   disk {      # Boot Disk, Size can be increased here. Then manually Increase Volume size inside Windows-2025.
-    interface   = "scsi0"
-    file_format = "raw"
+    datastore_id = var.proxmox_datastore_id
+    #interface   = "scsi0"
+    interface   = "sata0"
+    #file_format = "raw"
+    file_format = "qcow2"
     iothread    = true
-    ssd         = true
+    ssd         = var.disk_boot_ssd_enabled
     discard     = "on"
-    size        = 32     # minimum size of the Template image disk.
+    size        = endswith(var.disk_size_boot, "G") ? tonumber(replace(var.disk_size_boot, "G", "")) : ( endswith(var.disk_size_boot, "M") ? tonumber(replace(var.disk_size_boot, "M", "")) / 1024 : tonumber(var.disk_size_boot) / 1024 )
   }
   ## Add additional Disks here, if required.
   ##
@@ -288,41 +284,42 @@ resource "proxmox_virtual_environment_vm" "example" {
   # see https://registry.terraform.io/providers/bpg/proxmox/0.75.0/docs/resources/virtual_environment_vm#initialization
   initialization {
     user_data_file_id = proxmox_virtual_environment_file.example_ci_user_data.id
+    datastore_id      = var.proxmox_datastore_id
     # # >>> Fixed IP -- Start
     # # Use following if need fixed IP Address, otherwise comment out
     ip_config {
       ipv4 {
-        address = "192.168.4.70/24"
-        gateway = "192.168.4.1"
+        address = var.vm_fixed_ip
+        gateway = var.vm_fixed_gateway
       }
     }
     dns {
-      servers = ["192.168.4.1"]
+      servers = var.vm_fixed_dns
     }
     # # >>> Fixed IP -- End
   }
 }
 
-resource "time_sleep" "wait_12_minutes" {
-  depends_on = [proxmox_virtual_environment_vm.example]
+resource "time_sleep" "wait_7_minutes" {
+  depends_on = [proxmox_virtual_environment_vm.clone_edited_template]
   # 12 minutes sleep. I have a slow Proxmox Host :(
-  create_duration = "12m"
+  create_duration = "7m"
 }
 
 # # NB this can only connect after about 3m15s (because the ssh service in the
 # #    windows base image is configured as "delayed start").
 resource "null_resource" "ssh_into_vm" {
-  depends_on = [time_sleep.wait_12_minutes]
+  depends_on = [time_sleep.wait_7_minutes]
   provisioner "remote-exec" {
     connection {
       target_platform = "windows"
       type            = "ssh"
-      host            = coalesce(try(split("/",proxmox_virtual_environment_vm.example.initialization[0].ip_config[0].ipv4[0].address)[0], null),proxmox_virtual_environment_vm.example.ipv4_addresses[index(proxmox_virtual_environment_vm.example.network_interface_names, "Ethernet")][0] )
+      host            = coalesce(try(split("/",proxmox_virtual_environment_vm.clone_edited_template.initialization[0].ip_config[0].ipv4[0].address)[0], null),proxmox_virtual_environment_vm.clone_edited_template.ipv4_addresses[index(proxmox_virtual_environment_vm.clone_edited_template.network_interface_names, "Ethernet")][0] )
       user            = var.superuser_username
-      password        = var.superuser_password
+      password        = var.superuser_new_password
       private_key = file("${var.pvt_key_file}")
       agent = false
-      timeout = "2m"
+      timeout = "5m"
     }
     # NB this is executed as a batch script by cmd.exe.
     inline = [
@@ -333,8 +330,3 @@ resource "null_resource" "ssh_into_vm" {
   }
 }
 
-
-output "ip" {
-  value = coalesce(try(split("/",proxmox_virtual_environment_vm.example.initialization[0].ip_config[0].ipv4[0].address)[0], null),proxmox_virtual_environment_vm.example.ipv4_addresses[index(proxmox_virtual_environment_vm.example.network_interface_names, "Ethernet")][0] )
-  #proxmox_virtual_environment_vm.example.ipv4_addresses[index(proxmox_virtual_environment_vm.example.network_interface_names, "Ethernet")][0]
-}

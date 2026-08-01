@@ -1,0 +1,40 @@
+## INSTRUCTIONS: Make a copy of this file named "dockhand.auto.tfvars" and fill in the Actual values.
+##
+# This is file is a secret, should be in .gitignore and not commited to Source repositories. 
+#
+
+pub_key_file="/home/XXXX/.ssh/id_rsa.pub"
+pvt_key_file="/home/XXXX/.ssh/id_rsa"
+superuser_username="terraform"
+# Password with @ symbol has issues in cloudbase-init scripts escape-sequencing in terraform ".tf" files
+superuser_old_password="XXXXXXXX"
+superuser_new_password="XXXXXXXX"
+administrator_username="Administrator"
+administrator_old_password="XXXXXXXX"
+administrator_new_password="XXXXXXXX"
+# prefix is actually Proxmox KVM Name, and hostname.
+prefix="win2025"
+# Proxmox vars
+proxmox_node_address="192.168.4.20"
+proxmox_node_name="pve"
+PROXMOX_VE_ENDPOINT="https://192.168.4.20:8006/api2/json"
+PROXMOX_VE_USERNAME="terraform-prov@pve"
+PROXMOX_VE_PASSWORD="XXXXXXXX"
+PROXMOX_VE_INSECURE=true
+proxmox_datastore_id="local"
+# Tags to identify Proxmox VM Template
+proxmox_vm_template_tags=["windows", "template", "winserver", "2025"]
+# Tags to give to created VM
+proxmox_vm_tags=["2025", "windows", "vm", "appname"]
+vm_fixed_ip="192.168.0.105/24"
+vm_fixed_gateway="192.168.0.1"
+vm_fixed_dns=["192.168.0.1"]
+vm_mac_address="DE:AD:BE:EF:01:03"
+cpu_core_count=2
+memory_size="4096M"
+disk_size_boot="32G"
+disk_boot_ssd_enabled=false
+# cpu_type_host=true for Virtualization inside the VM, can slow down QEMU performance.
+cpu_type_host=false
+# podman_installed=true only when cpu_type_host=true.
+podman_installed=false
