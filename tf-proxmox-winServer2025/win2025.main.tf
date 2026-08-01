@@ -174,10 +174,10 @@ data "cloudinit_config" "example" {
       $service = Get-Service -Name WinRM -ErrorAction SilentlyContinue
 
       if (-not $service) {
-          Write-Output "WinRM is not installed. Installing..." -ForegroundColor Yellow
+          Write-Output "WinRM is not installed. Installing..."
           Enable-PSRemoting -Force
       } else {
-          Write-Output "WinRM is installed. Enforcing active status..." -ForegroundColor Cyan
+          Write-Output "WinRM is installed. Enforcing active status..."
       }
 
       Set-Service -Name WinRM -StartupType Automatic
@@ -187,23 +187,23 @@ data "cloudinit_config" "example" {
       $httpsListener = Get-ChildItem -Path WSMan:\LocalHost\Listener | Where-Object { $_.Keys -contains "Transport=HTTPS" }
 
       if (-not $httpsListener) {
-          Write-Output "No HTTPS listener found. Generating self-signed SSL certificate..." -ForegroundColor Yellow
+          Write-Output "No HTTPS listener found. Generating self-signed SSL certificate..."
           
           # Generate certificate utilizing the computer's local hostname
           $hostname = $env:COMPUTERNAME
           $cert = New-SelfSignedCertificate -DnsName $hostname -CertStoreLocation "Cert:\LocalMachine\My" -TextExtension @("2.5.29.37={text}1.3.6.1.5.5.7.3.1")
           
-          Write-Output "Certificate created with Thumbprint: $($cert.Thumbprint)" -ForegroundColor Green
+          Write-Output "Certificate created with Thumbprint: $($cert.Thumbprint)"
 
           # Create the WSMan HTTPS listener mapping it to the new certificate
-          Write-Output "Creating WinRM HTTPS listener on Port 5986..." -ForegroundColor Yellow
+          Write-Output "Creating WinRM HTTPS listener on Port 5986..."
           New-Item -Path WSMan:\LocalHost\Listener -Transport HTTPS -Address * -CertificateThumbPrint $cert.Thumbprint -Force | Out-Null
       } else {
-          Write-Output "WinRM HTTPS listener already exists." -ForegroundColor Green
+          Write-Output "WinRM HTTPS listener already exists."
       }
 
       # 3. Open Windows Firewall for TCP port 5986
-      Write-Output "Configuring Windows Firewall rule for WinRM HTTPS..." -ForegroundColor Yellow
+      Write-Output "Configuring Windows Firewall rule for WinRM HTTPS..."
       $firewallRule = Get-NetFirewallRule -Name "WinRM-HTTPS-Inbound" -ErrorAction SilentlyContinue
 
       if (-not $firewallRule) {
@@ -215,12 +215,12 @@ data "cloudinit_config" "example" {
                               -Protocol TCP `
                               -Action Allow `
                               -Profile Any | Out-Null
-          Write-Output "Firewall rule created successfully." -ForegroundColor Green
+          Write-Output "Firewall rule created successfully."
       } else {
-          Write-Output "Firewall rule already exists." -ForegroundColor Green
+          Write-Output "Firewall rule already exists."
       }
 
-      Write-Output "WinRM HTTPS Configuration Complete!" -ForegroundColor Green
+      Write-Output "WinRM HTTPS Configuration Complete!"
       EOF
   }
 }
