@@ -191,3 +191,8 @@ variable "cpu_type_host" {
 variable "podman_installed" {
   type = bool
 }
+
+variable "enable_winrm_local_account_remote_login_policy" {
+  type = bool
+  default = true
+}

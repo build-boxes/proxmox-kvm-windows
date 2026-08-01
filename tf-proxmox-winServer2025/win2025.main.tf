@@ -237,6 +237,16 @@ data "cloudinit_config" "example" {
           Write-Output "Firewall rule already exists."
       }
 
+      # 4. Optionally enable local-account remote login policy for WinRM.
+      $enableLocalAccountRemoteLoginPolicy = "${var.enable_winrm_local_account_remote_login_policy}"
+      if ($enableLocalAccountRemoteLoginPolicy -eq "true") {
+        Write-Output "Enabling LocalAccountTokenFilterPolicy for local-account remote login..."
+        New-ItemProperty -Path "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System" -Name "LocalAccountTokenFilterPolicy" -Value 1 -PropertyType DWord -Force | Out-Null
+        Write-Output "LocalAccountTokenFilterPolicy enabled."
+      } else {
+        Write-Output "Skipping LocalAccountTokenFilterPolicy (enable_winrm_local_account_remote_login_policy=false)."
+      }
+
       Write-Output "WinRM HTTPS Configuration Complete!"
       EOF
   }
@@ -345,7 +355,7 @@ resource "null_resource" "ssh_into_vm" {
       password        = var.superuser_new_password
       private_key = file("${var.pvt_key_file}")
       agent = false
-      timeout = "5m"
+      timeout = "3m"
     }
     # NB this is executed as a batch script by cmd.exe.
     inline = [
@@ -356,3 +366,12 @@ resource "null_resource" "ssh_into_vm" {
   }
 }
 
+# # Test Connection via Ansible using winRM
+resource "null_resource" "ansible_winrm_test" {
+  depends_on = [time_sleep.wait_12_minutes]
+  provisioner "local-exec" {
+    command = <<-EOF
+        ansible all -i '${local.host_ip},' -m win_ping -u '${var.administrator_username}' -e 'ansible_password=${var.administrator_new_password}' -e 'ansible_connection=winrm' -e 'ansible_winrm_transport=ntlm' -e 'ansible_port=5986' -e 'ansible_winrm_server_cert_validation=ignore'
+      EOF
+  }
+}

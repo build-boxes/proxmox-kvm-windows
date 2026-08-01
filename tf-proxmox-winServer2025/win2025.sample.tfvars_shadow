@@ -52,4 +52,4 @@ additional_disks=[
 		ssd_enabled=true
 	}
 ]
-
+enable_winrm_local_account_remote_login_policy=true

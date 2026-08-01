@@ -125,3 +125,39 @@ terrform destroy -auto-approve
             drwxr-xr-x 6 root           root           4096 Jun 12 16:30 ..
             drwxrwxr-x 2 root           root           4096 Jun 12 16:31 .
             ```
+## Using Standalone Ansible
+Connect to the Windows Server 2025, using server-local User Accounts with their local passwords as follows.
+1. Using winrm-Ntlm-transport Prompt for Passowrd:
+    ```
+    ansible all -i '192.168.0.105,' -m win_ping -u 'Administrator' -e 'ansible_connection=winrm' -e 'ansible_winrm_transport=ntlm' -e 'ansible_port=5986'  -e 'ansible_winrm_server_cert_validation=ignore' --ask-pass
+    #-- results in:
+    SSH password: <<YOUR INPUT>>
+    #-- results in:
+    192.168.0.105 | SUCCESS => {
+        "changed": false,
+        "ping": "pong"
+    }
+    ```
+1. Using winrm-Ntlm-transport included Password:
+    ```
+    ansible all -i '192.168.0.105,' -m win_ping -u 'Administrator' -e 'ansible_password=PASSWORD' -e 'ansible_winrm_transport=ntlm'  -e 'ansible_connection=winrm' -e 'ansible_port=5986'  -e 'ansible_winrm_server_cert_validation=ignore'
+    #-- results in:
+    192.168.0.105 | SUCCESS => {
+        "changed": false,
+        "ping": "pong"
+    }
+    ```
+1. Using winrm-Kerberos-transport (On Domain Joined Servers, after getting a kerberos ticket):
+    ```
+    ansible all -i '192.168.0.105,' -m win_ping -u 'hammad.rauf@hexword.ca' -e 'ansible_connection=winrm' -e 'ansible_winrm_transport=kerberos' -e 'ansible_port=5986'  -e 'ansible_winrm_server_cert_validation=ignore' 
+    #-- results in:
+    192.168.0.105 | SUCCESS => {
+        "changed": false,
+        "ping": "pong"
+    }
+    ```
+For the above first 2 examples to work the Windows Server Default policy settings need to be modified, as shown below. The winrm-kerberos-transport method on domain joined Win 2025 server with a user having been given access to that server, will not need the following.  <b>NOTE:</b> This Terraform script does that on Initial Boot if the tfvar variable <i>enable_winrm_local_account_remote_login_policy</i>, as a default arrangment, so it does not need to be manually executed. Included here for documentation and future use only.
+```
+# Run the following on the target Windows Server 2025, in an Administrative PowerShell Prompt:
+C:\> New-ItemProperty -Path "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System" -Name "LocalAccountTokenFilterPolicy" -Value 1 -PropertyType DWord -Force
+```
