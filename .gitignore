@@ -11,6 +11,8 @@
 # Local .terraform directories
 **/.terraform/*
 
+*/.tools/*
+
 # .tfstate files
 */*.tfstate
 */*.tfstate.*
@@ -28,8 +30,10 @@
 # to change depending on the environment.
 **/*.tfvars
 **/*.tfvars.json
+**/*.auto.pkrvars.hcl
 !**/*.sample.tfvars
 !**/*.sample.tfvars.json
+!**/*.sample.pkrvars.hcl
 
 # Ignore override files as they are usually used to override resources locally and so
 # are not checked in
