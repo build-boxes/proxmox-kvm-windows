@@ -140,7 +140,7 @@ Connect to the Windows Server 2025, using server-local User Accounts with their 
     ```
 1. Using winrm-Ntlm-transport included Password:
     ```
-    ansible all -i '192.168.0.105,' -m win_ping -u 'Administrator' -e 'ansible_password=PASSWORD' -e 'ansible_winrm_transport=ntlm'  -e 'ansible_connection=winrm' -e 'ansible_port=5986'  -e 'ansible_winrm_server_cert_validation=ignore'
+    ansible all -i '192.168.0.105,' -m win_ping -u 'Administrator' -e 'ansible_password=PASSWORD' -e 'ansible_connection=winrm' -e 'ansible_winrm_transport=ntlm' -e 'ansible_port=5986'  -e 'ansible_winrm_server_cert_validation=ignore'
     #-- results in:
     192.168.0.105 | SUCCESS => {
         "changed": false,
@@ -156,7 +156,9 @@ Connect to the Windows Server 2025, using server-local User Accounts with their 
         "ping": "pong"
     }
     ```
-For the above first 2 examples to work the Windows Server Default policy settings need to be modified, as shown below. The winrm-kerberos-transport method on domain joined Win 2025 server with a user having been given access to that server, will not need the following.  <b>NOTE:</b> This Terraform script does that on Initial Boot if the tfvar variable <i>enable_winrm_local_account_remote_login_policy</i>, as a default arrangment, so it does not need to be manually executed. Included here for documentation and future use only.
+For the above first 2 examples to work the Windows Server Default policy settings need to be modified, as shown below. The winrm-kerberos-transport method on domain joined Win 2025 server with a user having been given access to that server, will not need the following.
+  
+<b>NOTE:</b> This Terraform script does this policy change on Initial Boot if the tfvar variable <i>enable_winrm_local_account_remote_login_policy</i>, as a default arrangment, so it does not need to be manually executed. Included here for documentation and future reference use only.
 ```
 # Run the following on the target Windows Server 2025, in an Administrative PowerShell Prompt:
 C:\> New-ItemProperty -Path "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System" -Name "LocalAccountTokenFilterPolicy" -Value 1 -PropertyType DWord -Force

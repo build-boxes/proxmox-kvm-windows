@@ -344,31 +344,37 @@ resource "time_sleep" "wait_12_minutes" {
 
 # # NB this can only connect after about 3m15s (because the ssh service in the
 # #    windows base image is configured as "delayed start").
-resource "null_resource" "ssh_into_vm" {
-  depends_on = [time_sleep.wait_12_minutes]
-  provisioner "remote-exec" {
-    connection {
-      target_platform = "windows"
-      type            = "ssh"
-      host            = coalesce(try(split("/",proxmox_virtual_environment_vm.clone_edited_template.initialization[0].ip_config[0].ipv4[0].address)[0], null),proxmox_virtual_environment_vm.clone_edited_template.ipv4_addresses[index(proxmox_virtual_environment_vm.clone_edited_template.network_interface_names, "Ethernet")][0] )
-      user            = var.superuser_username
-      password        = var.superuser_new_password
-      private_key = file("${var.pvt_key_file}")
-      agent = false
-      timeout = "3m"
-    }
-    # NB this is executed as a batch script by cmd.exe.
-    inline = [
-      <<-EOF
-      whoami.exe /all
-      EOF
-    ]
-  }
+# resource "null_resource" "ssh_into_vm" {
+#   depends_on = [time_sleep.wait_12_minutes]
+#   provisioner "remote-exec" {
+#     connection {
+#       target_platform = "windows"
+#       type            = "ssh"
+#       host            = coalesce(try(split("/",proxmox_virtual_environment_vm.clone_edited_template.initialization[0].ip_config[0].ipv4[0].address)[0], null),proxmox_virtual_environment_vm.clone_edited_template.ipv4_addresses[index(proxmox_virtual_environment_vm.clone_edited_template.network_interface_names, "Ethernet")][0] )
+#       user            = var.superuser_username
+#       password        = var.superuser_new_password
+#       private_key = file("${var.pvt_key_file}")
+#       agent = false
+#       timeout = "3m"
+#     }
+#     # NB this is executed as a batch script by cmd.exe.
+#     inline = [
+#       <<-EOF
+#       whoami.exe /all
+#       EOF
+#     ]
+#   }
+# }
+
+resource "time_sleep" "wait_2_more_minutes" {
+  depends_on = [proxmox_virtual_environment_vm.clone_edited_template]
+  # 2 minutes sleep. Give enough time for winRM service to be ready...
+  create_duration = "2m"
 }
 
 # # Test Connection via Ansible using winRM
 resource "null_resource" "ansible_winrm_test" {
-  depends_on = [time_sleep.wait_12_minutes]
+  depends_on = [time_sleep.wait_2_more_minutes]
   provisioner "local-exec" {
     command = <<-EOF
         ansible all -i '${local.host_ip},' -m win_ping -u '${var.administrator_username}' -e 'ansible_password=${var.administrator_new_password}' -e 'ansible_connection=winrm' -e 'ansible_winrm_transport=ntlm' -e 'ansible_port=5986' -e 'ansible_winrm_server_cert_validation=ignore'
