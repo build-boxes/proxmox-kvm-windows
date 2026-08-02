@@ -1,4 +1,5 @@
 proxmox_host              = "192.168.4.20:8006"
+proxmox_ve_endpoint       = "https://192.168.4.20:8006/api2/json"
 proxmox_node              = "pve"
 proxmox_api_user          = "terraform-prov@pve"
 proxmox_api_password      = "CHANGE_ME"
@@ -11,10 +12,11 @@ winserver2025_iso_checksum = "none"
 virtio_iso_name           = "virtio-win-0.1.271.iso"
 virtio_iso_checksum       = "none"
 
-vm_name                   = "pckr-winserver2025"
-template_name             = "tpl-winserver2025"
+vm_name                   = "pckr-win2025"
+template_name             = "tpl-win2025"
 vmid                      = 9999
-cpu_type                  = "host"
+# cpu_type                  = "host"
+cpu_type                  = "x86-64-v2-AES"
 cores                     = 2
 sockets                   = 1
 memory_mb                 = 4096
