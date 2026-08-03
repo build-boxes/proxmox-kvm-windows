@@ -10,6 +10,7 @@ storage_pool              = "local-lvm"
 winserver2025_iso_name    = "Win2025-SERVER_EVAL_x64FRE_en-us.iso"
 winserver2025_iso_checksum = "none"
 winserver2025_modified_iso_name = "Win2025-SERVER_Moded_Unattended.iso"
+winserver2025_image_name  = "Windows Server 2025 Datacenter Evaluation (Desktop Experience)"
 virtio_iso_name           = "virtio-win-0.1.271.iso"
 virtio_iso_checksum       = "none"
 
@@ -29,6 +30,7 @@ network_bridge            = "vmbr0"
 network_model             = "e1000" # switch to "virtio" after guest VirtIO network drivers are installed
 network_vlan              = ""
 network_firewall          = true
+boot_command_wait_seconds = "1s"
 
 administrator_password    = "CHANGE_ME"
 windows_time_zone         = "America/Toronto"

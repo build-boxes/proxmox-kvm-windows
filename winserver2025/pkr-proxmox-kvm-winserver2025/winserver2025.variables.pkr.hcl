@@ -277,3 +277,9 @@ variable "vm_image_tags" {
   description = "Tags to apply to the final Proxmox template"
   default     = ["template", "windows", "winserver", "2025"]
 }
+
+variable "boot_command_wait_seconds" {
+  type        = string
+  description = "Seconds to wait for the boot command to complete, Example: '5s'"
+  default     = "5s"
+}

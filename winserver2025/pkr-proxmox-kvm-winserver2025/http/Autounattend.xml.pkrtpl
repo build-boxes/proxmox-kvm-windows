@@ -116,23 +116,17 @@
         <SynchronousCommand wcm:action="add">
           <Order>1</Order>
           <Description>Install VirtIO guest tools from PACKERDEV</Description>
-          <CommandLine>powershell.exe -NoLogo -NoProfile -ExecutionPolicy Bypass -Command "Write-Output '---> VirtIO guest tools from CD PACKERDEV - started'; $volume = Get-Volume | Where-Object { $_.FileSystemLabel -eq 'PACKERDEV' } | Select-Object -First 1 -ExpandProperty DriveLetter; if (-not $volume) { throw 'CD Labeled - PACKERDEV - not found' }; &amp; ($volume + ':\install-virtio-guest-tools.ps1'); Write-Output '---< Virtio guest tools - Completed.'; "</CommandLine>
+          <CommandLine>powershell.exe -NoLogo -NoProfile -ExecutionPolicy Bypass -Command "$volume = Get-Volume | Where-Object { $_.FileSystemLabel -eq 'PACKERDEV' } | Select-Object -First 1 -ExpandProperty DriveLetter; if (-not $volume) { throw 'CD Labeled - PACKERDEV - not found' }; &amp; ($volume + ':\install-virtio-guest-tools.ps1'); "</CommandLine>
           <RequiresUserInput>false</RequiresUserInput>
         </SynchronousCommand>
         <SynchronousCommand wcm:action="add">
           <Order>2</Order>
           <Description>Bootstrap WinRM for Packer</Description>
-          <CommandLine>powershell.exe -NoLogo -NoProfile -ExecutionPolicy Bypass -Command "Write-Output '---> Bootstrap WinRM for Packer - started'; $volume = Get-Volume | Where-Object { $_.FileSystemLabel -eq 'PACKERDEV' } | Select-Object -First 1 -ExpandProperty DriveLetter; if (-not $volume) { throw 'CD Labeled - PACKERDEV - not found' }; &amp; ($volume + ':\bootstrap-winrm.ps1') -WinRMPort ${winrm_port}; Write-Output '---< Bootstrap WinRM for Packer - Completed.';"</CommandLine>
+          <CommandLine>powershell.exe -NoLogo -NoProfile -ExecutionPolicy Bypass -Command "$volume = Get-Volume | Where-Object { $_.FileSystemLabel -eq 'PACKERDEV' } | Select-Object -First 1 -ExpandProperty DriveLetter; if (-not $volume) { throw 'CD Labeled - PACKERDEV - not found' }; &amp; ($volume + ':\bootstrap-winrm.ps1') -WinRMPort ${winrm_port}"</CommandLine>
           <RequiresUserInput>false</RequiresUserInput>
-        </SynchronousCommand>        
-        <!--SynchronousCommand wcm:action="add">
-          <Order>3</Order>
-          <Description>Reboot after VirtIO install</Description>
-          <CommandLine>powershell.exe -NoLogo -NoProfile -ExecutionPolicy Bypass -Command "shutdown.exe /r /t 5 /f"</CommandLine>
-          <RequiresUserInput>false</RequiresUserInput>
-        </SynchronousCommand-->
+        </SynchronousCommand>
       </FirstLogonCommands>
     </component>
   </settings>
-  <cpi:offlineImage cpi:source="wim:c:/images/install.wim#Windows Server 2025 SERVERDATACENTER" xmlns:cpi="urn:schemas-microsoft-com:cpi"/>
+  <cpi:offlineImage cpi:source="wim:c:/images/install.wim#${image_name}" xmlns:cpi="urn:schemas-microsoft-com:cpi"/>
 </unattend>

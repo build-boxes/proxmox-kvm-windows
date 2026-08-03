@@ -19,6 +19,7 @@ source "proxmox-iso" "winserver2025" {
   memory   = var.memory_mb
   machine  = "q35"
   bios     = "ovmf"
+  boot     = var.disk_bus == "sata" ? "order=ide0;sata0;net0" : "order=ide0;scsi0;net0"
 
   efi_config {
     efi_storage_pool  = var.storage_pool
@@ -95,9 +96,9 @@ source "proxmox-iso" "winserver2025" {
     keep_cdrom_device = var.keep_cdrom_devices
   }
 
-  boot_wait    = "5s"
+  boot_wait    = var.boot_command_wait_seconds
   boot_command = [
-    "<enter>"
+    "<enter><wait><enter><wait><enter><wait><enter>"
   ]
 
   # WinRM

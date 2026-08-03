@@ -169,47 +169,47 @@ if [ ! -f "$original_iso" ]; then
     exit 1
 fi
 
+if [ ! -f "$autoFile" ]; then
+    echo "Autounattend file not found: $autoFile"
+    exit 1
+fi
+
 # Clean previous output
 if [ -f "$modified_iso" ]; then
     echo "Removing existing modified ISO: $modified_iso"
     rm -f "$modified_iso"
 fi
 
-# Extract ISO contents
-mkdir -p iso_extract
-#xorriso -osirrox on -indev $original_iso -extract / iso_extract
-7z x "$original_iso" -oiso_extract
+# Rebuild ISO from extracted tree with explicit BIOS+UEFI boot entries.
+workdir="$(mktemp -d)"
+trap 'rm -rf "$workdir"' EXIT
 
-# Copy your custom file(s)
-cp "$autoFile" iso_extract/
+echo "Extracting original ISO..."
+7z x "$original_iso" "-o${workdir}/iso_extract" >/dev/null
 
-# Rebuild ISO with xorriso
-#xorriso -as mkisofs -iso-level 3 -volid 'WIN2025' -eltorito-alt-boot -e boot/etfsboot.com -no-emul-boot -eltorito-alt-boot -e efi/microsoft/boot/efisys.bin -no-emul-boot -o $modified_iso iso_extract
-#xorriso -as mkisofs \
-#  -iso-level 3 \
-#  -volid "WIN2025" \
-#  -eltorito-boot boot/bootfix.bin \
-#  -no-emul-boot \
-#  -boot-load-size 8 \
-#  -boot-info-table \
-#  -eltorito-alt-boot \
-#  -e efi/microsoft/boot/efisys.bin \
-#  -no-emul-boot \
-#  -o "$modified_iso" \
-#  iso_extract
+if [[ ! -f "${workdir}/iso_extract/boot/etfsboot.com" ]]; then
+        echo "Missing expected BIOS boot image: ${workdir}/iso_extract/boot/etfsboot.com"
+        exit 1
+fi
 
+if [[ ! -f "${workdir}/iso_extract/efi/microsoft/boot/efisys.bin" ]]; then
+        echo "Missing expected UEFI boot image: ${workdir}/iso_extract/efi/microsoft/boot/efisys.bin"
+        exit 1
+fi
+
+cp "$autoFile" "${workdir}/iso_extract/autounattend.xml"
+
+echo "Rebuilding modified ISO..."
 xorriso -as mkisofs \
-  -iso-level 3 \
-  -volid "WIN2025" \
-  -eltorito-boot efi/microsoft/boot/cdboot.efi \
-  -no-emul-boot \
-  -boot-load-size 8 \
-  -boot-info-table \
-  -eltorito-alt-boot \
-  -e efi/microsoft/boot/efisys.bin \
-  -no-emul-boot \
-  -o "$modified_iso" \
-  iso_extract
-
-# Cleanup
-rm -rf iso_extract
+    -iso-level 3 \
+    -J -joliet-long \
+    -volid "WIN2025" \
+    -eltorito-boot boot/etfsboot.com \
+    -no-emul-boot \
+    -boot-load-size 8 \
+    -boot-info-table \
+    -eltorito-alt-boot \
+    -e efi/microsoft/boot/efisys.bin \
+    -no-emul-boot \
+    -o "$modified_iso" \
+    "${workdir}/iso_extract"
