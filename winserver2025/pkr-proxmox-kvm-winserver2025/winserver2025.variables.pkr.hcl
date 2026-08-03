@@ -22,6 +22,13 @@ variable "winserver2025_iso_checksum" {
   default     = "none"
 }
 
+variable "winserver2025_modified_iso_name" {
+  type    = string
+  description = "Name of the packer created Modified ISO Installer for Win2025, consisting of all contents of Original Win2025 ISO PLUS autounattended.xml file."
+  default = "Win2025-SERVER_Moded_Unattended.iso"
+}
+
+
 variable "winserver2025_image_name" {
   type        = string
   description = "Image name from the Windows installer WIM to deploy"
@@ -159,6 +166,11 @@ variable "proxmox_host" {
   type        = string
   description = "Proxmox host or cluster endpoint without protocol"
   default     = ""
+}
+
+variable "proxmox_ve_endpoint" {
+  type    = string
+  default = null
 }
 
 variable "proxmox_node" {

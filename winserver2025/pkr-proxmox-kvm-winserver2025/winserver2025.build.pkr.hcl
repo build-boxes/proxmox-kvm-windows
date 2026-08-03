@@ -11,6 +11,8 @@ locals {
     "PACKER_ENABLE_IPCONFIG_RELEASE_BEFORE_SYSPREP=${var.winserver2025_enable_ipconfig_release_before_sysprep}",
     "PACKER_ENABLE_SYSPREP_APPX_WORKAROUND=${var.winserver2025_enable_sysprep_appx_workaround}"
   ]
+  original_iso = "${var.storage_iso}:iso/${var.winserver2025_iso_name}"
+  modified_iso = "${var.storage_iso}:iso/${var.winserver2025_modified_iso_name}"
 }
 
 

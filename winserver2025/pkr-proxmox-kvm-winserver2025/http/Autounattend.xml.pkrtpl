@@ -65,7 +65,7 @@
       <UserData>
         <AcceptEula>true</AcceptEula>
         <FullName>Packer</FullName>
-        <Organization>Hexword</Organization>
+        <Organization>Hexword.ca</Organization>
       </UserData>
       <EnableFirewall>true</EnableFirewall>
     </component>
@@ -75,7 +75,7 @@
       <ComputerName>*</ComputerName>
       <TimeZone>${time_zone}</TimeZone>
       <RegisteredOwner>Packer</RegisteredOwner>
-      <RegisteredOrganization>Hexword</RegisteredOrganization>
+      <RegisteredOrganization>Hexword.ca</RegisteredOrganization>
     </component>
   </settings>
   <settings pass="oobeSystem">
@@ -116,7 +116,7 @@
         <SynchronousCommand wcm:action="add">
           <Order>1</Order>
           <Description>Bootstrap WinRM for Packer</Description>
-          <CommandLine>powershell.exe -NoLogo -NoProfile -ExecutionPolicy Bypass -Command "$volume = Get-Volume | Where-Object { $_.FileSystemLabel -eq 'PACKERDRV' } | Select-Object -First 1 -ExpandProperty DriveLetter; if (-not $volume) { throw 'PACKERDRV not found' }; &amp; ($volume + ':\bootstrap-winrm.ps1') -WinRMPort ${winrm_port}"</CommandLine>
+          <CommandLine>powershell.exe -NoLogo -NoProfile -ExecutionPolicy Bypass -Command "$volume = Get-Volume | Where-Object { $_.FileSystemLabel -eq 'PACKERDEV' } | Select-Object -First 1 -ExpandProperty DriveLetter; if (-not $volume) { throw 'CD Labeled - PACKERDEV - not found' }; &amp; ($volume + ':\bootstrap-winrm.ps1') -WinRMPort ${winrm_port}"</CommandLine>
           <RequiresUserInput>false</RequiresUserInput>
         </SynchronousCommand>
       </FirstLogonCommands>

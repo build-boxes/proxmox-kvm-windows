@@ -3,6 +3,12 @@ param(
 )
 
 $ErrorActionPreference = "Stop"
+$logFolder = 'C:\packer_build_logs.log'
+if (-not (Test-Path -Path $logFolder)) {
+    Write-Host "Creating log folder at $logFolder..."
+    New-Item -Path $logFolder -ItemType Directory -Force | Out-Null
+}
+
 
 Write-Host "Configuring WinRM HTTPS listener for Packer..."
 

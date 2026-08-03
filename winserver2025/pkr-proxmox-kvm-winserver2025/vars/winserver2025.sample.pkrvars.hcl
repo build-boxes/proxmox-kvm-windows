@@ -9,6 +9,7 @@ storage_iso               = "local"
 storage_pool              = "local-lvm"
 winserver2025_iso_name    = "Win2025-SERVER_EVAL_x64FRE_en-us.iso"
 winserver2025_iso_checksum = "none"
+winserver2025_modified_iso_name = "Win2025-SERVER_Moded_Unattended.iso"
 virtio_iso_name           = "virtio-win-0.1.271.iso"
 virtio_iso_checksum       = "none"
 

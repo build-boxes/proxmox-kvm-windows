@@ -22,4 +22,10 @@ Proxmox KVM Image creation for Windows 11 and Windows Server 2025.
 1. Windows Server 2025 now also has an initial Packer HCL build path in [winserver2025/pkr-proxmox-kvm-winserver2025](./winserver2025/pkr-proxmox-kvm-winserver2025).
 1. That build is intended to automate the template creation steps that were previously manual, then feed the existing Terraform clone workflow.
 
+## Required Pre-Requisite Software
+To use this software you need to have the following software tools installed in your Linux like cient computer.
+1. packer
+1. terraform
+1. ansible
+1. powershell
 
