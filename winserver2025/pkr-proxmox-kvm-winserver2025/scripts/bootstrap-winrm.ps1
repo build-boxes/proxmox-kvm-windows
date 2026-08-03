@@ -1,21 +1,32 @@
 param(
-    [int]$WinRMPort = 5986
+    [int]$WinRMPort = 5986,
+    [string]$LogRoot = "C:\packer_build_logs"
 )
 
 $ErrorActionPreference = "Stop"
-$logFolder = 'C:\packer_build_logs'
+$logFolder = $LogRoot
 if (-not (Test-Path -Path $logFolder)) {
-    Write-Host "Creating log folder at $logFolder..."
     New-Item -Path $logFolder -ItemType Directory -Force | Out-Null
 }
 
-Start-Transcript -Path (Join-Path $logFolder 'bootstrap-winrm.log') -Append -ErrorAction SilentlyContinue | Out-Null
+$logFile = Join-Path $logFolder "bootstrap-winrm.log"
+function Write-Log {
+    param(
+        [string]$Message,
+        [string]$Level = "INFO"
+    )
+    $line = "{0} [{1}] {2}" -f (Get-Date -Format "yyyy-MM-ddTHH:mm:ss"), $Level, $Message
+    Write-Output $line
+    Add-Content -Path $logFile -Value $line
+}
 
-Write-Host "Configuring WinRM HTTPS listener for Packer..."
+Write-Log "Starting WinRM bootstrap."
+Write-Log "Configuring WinRM HTTPS listener for Packer."
 
 Enable-PSRemoting -SkipNetworkProfileCheck -Force
 Set-Service -Name WinRM -StartupType Automatic
 Start-Service -Name WinRM
+Write-Log "WinRM service is enabled and running."
 
 # Ensure core WinRM service settings expected by Packer are enabled.
 Set-Item -Path WSMan:\localhost\Service\AllowUnencrypted -Value $false
@@ -29,6 +40,7 @@ $existingHttpsListener = Get-ChildItem -Path WSMan:\LocalHost\Listener -ErrorAct
 
 if (-not $existingHttpsListener) {
     $hostname = $env:COMPUTERNAME
+    Write-Log "No HTTPS WinRM listener found; creating self-signed certificate for $hostname."
     $certificate = New-SelfSignedCertificate `
         -DnsName $hostname `
         -CertStoreLocation "Cert:\LocalMachine\My" `
@@ -39,6 +51,8 @@ if (-not $existingHttpsListener) {
         -Address * `
         -CertificateThumbPrint $certificate.Thumbprint `
         -Force | Out-Null
+} else {
+    Write-Log "Existing HTTPS WinRM listener found; reusing it."
 }
 
 if (-not (Get-NetFirewallRule -Name "WinRM-HTTPS-Inbound" -ErrorAction SilentlyContinue)) {
@@ -50,6 +64,7 @@ if (-not (Get-NetFirewallRule -Name "WinRM-HTTPS-Inbound" -ErrorAction SilentlyC
         -Protocol TCP `
         -LocalPort $WinRMPort `
         -Profile Any | Out-Null
+    Write-Log "Created WinRM HTTPS firewall rule on port $WinRMPort."
 }
 
 if (-not (Get-NetFirewallRule -Name "WinRM-HTTP-Inbound" -ErrorAction SilentlyContinue)) {
@@ -61,6 +76,7 @@ if (-not (Get-NetFirewallRule -Name "WinRM-HTTP-Inbound" -ErrorAction SilentlyCo
         -Protocol TCP `
         -LocalPort 5985 `
         -Profile Any | Out-Null
+    Write-Log "Created WinRM HTTP firewall rule on port 5985."
 }
 
 New-ItemProperty `
@@ -74,6 +90,6 @@ New-ItemProperty `
 winrm enumerate winrm/config/listener | Out-Host
 Test-NetConnection -ComputerName localhost -Port 5985 -WarningAction SilentlyContinue | Out-Null
 Test-NetConnection -ComputerName localhost -Port $WinRMPort -WarningAction SilentlyContinue | Out-Null
+Write-Log "Validated WinRM listeners and local connectivity checks."
 
-Write-Host "WinRM HTTPS bootstrap complete."
-Stop-Transcript | Out-Null
+Write-Log "WinRM HTTPS bootstrap complete."

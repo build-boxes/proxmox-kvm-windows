@@ -115,14 +115,44 @@
       <FirstLogonCommands>
         <SynchronousCommand wcm:action="add">
           <Order>1</Order>
-          <Description>Install VirtIO guest tools from PACKERDEV</Description>
-          <CommandLine>powershell.exe -NoLogo -NoProfile -ExecutionPolicy Bypass -Command "$volume = Get-Volume | Where-Object { $_.FileSystemLabel -eq 'PACKERDEV' } | Select-Object -First 1 -ExpandProperty DriveLetter; if (-not $volume) { throw 'CD Labeled - PACKERDEV - not found' }; &amp; ($volume + ':\install-virtio-guest-tools.ps1'); "</CommandLine>
+          <Description>Bootstrap WinRM for Packer</Description>
+          <CommandLine>powershell.exe -NoLogo -NoProfile -ExecutionPolicy Bypass -Command "$volume = Get-Volume | Where-Object { $_.FileSystemLabel -eq 'PACKERDEV' } | Select-Object -First 1 -ExpandProperty DriveLetter; if (-not $volume) { throw 'CD Labeled - PACKERDEV - not found' }; &amp; ($volume + ':\bootstrap-winrm.ps1') -WinRMPort ${winrm_port} -LogRoot '${log_root}'"</CommandLine>
           <RequiresUserInput>false</RequiresUserInput>
         </SynchronousCommand>
         <SynchronousCommand wcm:action="add">
           <Order>2</Order>
-          <Description>Bootstrap WinRM for Packer</Description>
-          <CommandLine>powershell.exe -NoLogo -NoProfile -ExecutionPolicy Bypass -Command "$volume = Get-Volume | Where-Object { $_.FileSystemLabel -eq 'PACKERDEV' } | Select-Object -First 1 -ExpandProperty DriveLetter; if (-not $volume) { throw 'CD Labeled - PACKERDEV - not found' }; &amp; ($volume + ':\bootstrap-winrm.ps1') -WinRMPort ${winrm_port}"</CommandLine>
+          <Description>Install VirtIO guest tools from PACKERDEV</Description>
+          <CommandLine>powershell.exe -NoLogo -NoProfile -ExecutionPolicy Bypass -Command "$volume = Get-Volume | Where-Object { $_.FileSystemLabel -eq 'PACKERDEV' } | Select-Object -First 1 -ExpandProperty DriveLetter; if (-not $volume) { throw 'CD Labeled - PACKERDEV - not found' }; &amp; ($volume + ':\install-virtio-guest-tools.ps1') -LogRoot '${log_root}'; "</CommandLine>
+          <RequiresUserInput>false</RequiresUserInput>
+        </SynchronousCommand>
+        <SynchronousCommand wcm:action="add">
+          <Order>3</Order>
+          <Description>Install OpenSSH server</Description>
+          <CommandLine>powershell.exe -NoLogo -NoProfile -ExecutionPolicy Bypass -Command "$volume = Get-Volume | Where-Object { $_.FileSystemLabel -eq 'PACKERDEV' } | Select-Object -First 1 -ExpandProperty DriveLetter; if (-not $volume) { throw 'CD Labeled - PACKERDEV - not found' }; &amp; ($volume + ':\install-openssh.ps1') -LogRoot '${log_root}'; "</CommandLine>
+          <RequiresUserInput>false</RequiresUserInput>
+        </SynchronousCommand>
+        <SynchronousCommand wcm:action="add">
+          <Order>4</Order>
+          <Description>Enable RDP</Description>
+          <CommandLine>powershell.exe -NoLogo -NoProfile -ExecutionPolicy Bypass -Command "$volume = Get-Volume | Where-Object { $_.FileSystemLabel -eq 'PACKERDEV' } | Select-Object -First 1 -ExpandProperty DriveLetter; if (-not $volume) { throw 'CD Labeled - PACKERDEV - not found' }; &amp; ($volume + ':\enable-rdp.ps1') -LogRoot '${log_root}'; "</CommandLine>
+          <RequiresUserInput>false</RequiresUserInput>
+        </SynchronousCommand>
+        <SynchronousCommand wcm:action="add">
+          <Order>5</Order>
+          <Description>Windows Restart</Description>
+          <CommandLine>shutdown /r /t 0</CommandLine>
+          <RequiresUserInput>false</RequiresUserInput>
+        </SynchronousCommand>
+        <SynchronousCommand wcm:action="add">
+          <Order>6</Order>
+          <Description>Install Cloudbase-Init</Description>
+          <CommandLine>powershell.exe -NoLogo -NoProfile -ExecutionPolicy Bypass -Command "$volume = Get-Volume | Where-Object { $_.FileSystemLabel -eq 'PACKERDEV' } | Select-Object -First 1 -ExpandProperty DriveLetter; if (-not $volume) { throw 'CD Labeled - PACKERDEV - not found' }; &amp; ($volume + ':\install-cloudbase-init.ps1') -LogRoot '${log_root}'; "</CommandLine>
+          <RequiresUserInput>false</RequiresUserInput>
+        </SynchronousCommand>
+        <SynchronousCommand wcm:action="add">
+          <Order>7</Order>
+          <Description>Finalize Template</Description>
+          <CommandLine>powershell.exe -NoLogo -NoProfile -ExecutionPolicy Bypass -Command "$volume = Get-Volume | Where-Object { $_.FileSystemLabel -eq 'PACKERDEV' } | Select-Object -First 1 -ExpandProperty DriveLetter; if (-not $volume) { throw 'CD Labeled - PACKERDEV - not found' }; &amp; ($volume + ':\finalize-template.ps1') -LogRoot '${log_root}'; "</CommandLine>
           <RequiresUserInput>false</RequiresUserInput>
         </SynchronousCommand>
       </FirstLogonCommands>

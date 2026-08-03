@@ -34,6 +34,7 @@ boot_command_wait_seconds = "1s"
 
 administrator_password    = "CHANGE_ME"
 windows_time_zone         = "America/Toronto"
+windows_setup_log_root    = "C:\\packer_build_logs.txt"
 
 winserver2025_enable_openssh                    = false
 winserver2025_enable_rdp                        = true
