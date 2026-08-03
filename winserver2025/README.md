@@ -80,6 +80,19 @@ packer init .
 packer fmt .
 packer validate -var-file=winserver2025.auto.pkrvars.hcl .
 packer build -var-file=winserver2025.auto.pkrvars.hcl .
+
+## OR Simply
+cd pkr-proxmox-kvm-winserver2025
+./run_packer_build.sh \
+     --proxmox-host 192.168.0.18 \
+     --proxmox-os-user root \
+     --moded-iso-name Win2025-SERVER_Moded_Unattended.iso \
+     --orig-iso-name Win2025-SERVER_EVAL_x64FRE_en-us.iso \
+     --win-image-name 'Windows Server 2025 SERVERDATACENTER' \
+     --windows-time-zone America/Toronto \
+     --proxmox-storage-iso ntfs2tb-iso \
+     --administrator-password 'CHANGE_ME' \
+     --winrm-port 5986
 ```
 
 ### Notes on the current implementation
@@ -87,6 +100,39 @@ packer build -var-file=winserver2025.auto.pkrvars.hcl .
 1. The manual VirtIO MSI, QEMU guest agent install, OpenSSH option, RDP enablement, Cloudbase-Init install, pre-sysprep `ipconfig /release`, and Appx workaround are all represented in the Packer scripts.
 1. The Proxmox builder unmounts the Windows and VirtIO ISOs after the build and converts the generalized VM into a template.
 1. `*.auto.pkrvars.hcl` files are ignored by Git so local credentials and passwords stay out of the repository.
+
+### WinRM troubleshooting during Packer build
+
+If Packer pauses at `Waiting for WinRM to become available...`, use the checks below.
+
+1. Verify basic network reachability from Linux:
+   ```bash
+   ping -c 3 <vm-ip>
+   ```
+1. Verify WinRM TCP reachability from Linux:
+   ```bash
+   nc -zv -w 3 <vm-ip> 5986
+   nc -zv -w 3 <vm-ip> 5985
+   ```
+1. Verify WinRM HTTPS endpoint from Linux:
+   ```bash
+   curl -k -I https://<vm-ip>:5986/wsman
+   ```
+   - `HTTP 405` with `allow: POST` is expected for `HEAD` and confirms the endpoint is alive.
+   - `HTTP 401` is also acceptable and means authentication is required.
+1. Verify listener state inside the Windows VM (Administrator PowerShell):
+   ```powershell
+   winrm enumerate winrm/config/listener
+   Test-NetConnection -ComputerName localhost -Port 5986
+   ```
+1. If HTTPS 5986 is not available, ensure these are true:
+   - WinRM service is running and set to automatic.
+   - A WinRM HTTPS listener exists.
+   - Windows firewall allows inbound TCP 5986.
+
+Build flow notes:
+1. In this repo, unattended first-logon runs WinRM bootstrap before longer install tasks so communicator startup is not delayed.
+1. The WinRM bootstrap script logs to `C:\packer_build_logs\bootstrap-winrm.log` inside the guest for post-failure diagnosis.
 
 ## Windows Server 2025 - Template Creation
 

@@ -28,12 +28,16 @@ build {
     environment_vars = local.powershell_env
     script           = "scripts/install-openssh.ps1"
     timeout          = "85m"
+    retry_count     = 17
+    retry_sleep     = "5m"
   }
 
   provisioner "powershell" {
     environment_vars = local.powershell_env
     script           = "scripts/enable-rdp.ps1"
     timeout          = "10m"
+    retry_count     = 10
+    retry_sleep     = "1m"
   }
 
   provisioner "windows-restart" {
@@ -44,12 +48,16 @@ build {
     environment_vars = local.powershell_env
     script           = "scripts/install-cloudbase-init.ps1"
     timeout          = "10m"
+    retry_count     = 10
+    retry_sleep     = "1m"
   }
 
   provisioner "powershell" {
     environment_vars = local.powershell_env
     script           = "scripts/finalize-template.ps1"
     timeout          = "10m"
+    retry_count     = 10
+    retry_sleep     = "1m"
   }
 
 
