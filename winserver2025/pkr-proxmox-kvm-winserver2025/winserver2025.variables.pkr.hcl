@@ -119,6 +119,16 @@ variable "disk_format" {
   default     = "qcow2"
 }
 
+variable "disk_bus" {
+  type        = string
+  description = "Disk bus type for the primary OS disk (e.g. scsi or sata)"
+  default     = "scsi"
+  validation {
+    condition     = contains(["scsi", "sata", "virtio"], var.disk_bus)
+    error_message = "Disk bus must be one of: scsi, sata, or virtio."
+  }
+}
+
 variable "disk_size" {
   type        = string
   description = "Boot disk size"

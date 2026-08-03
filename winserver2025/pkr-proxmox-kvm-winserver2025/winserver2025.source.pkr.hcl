@@ -57,8 +57,8 @@ source "proxmox-iso" "winserver2025" {
     storage_pool = var.storage_pool
     ssd          = var.disk_ssd_enabled
     discard      = true
-    io_thread    = true
-    type         = "scsi"
+    io_thread    = contains(["scsi", "virtio"], var.disk_bus)
+    type         = var.disk_bus
     cache_mode   = "none"
   }
 
@@ -72,7 +72,7 @@ source "proxmox-iso" "winserver2025" {
 
   additional_iso_files {
     cd_content = {
-      "autounattend.xml" = templatefile("./http/Autounattend.xml.pkrtpl", {image_name = var.winserver2025_modified_iso_name, time_zone = var.windows_time_zone , administrator_password = var.administrator_password, winrm_port = var.winrm_port }),
+      "autounattend.xml" = templatefile("./http/Autounattend.xml.pkrtpl", {image_name = var.winserver2025_image_name, time_zone = var.windows_time_zone , administrator_password = var.administrator_password, winrm_port = var.winrm_port }),
       "bootstrap-winrm.ps1" = file("./scripts/bootstrap-winrm.ps1"),
       "enable-rdp.ps1" = file("./scripts/enable-rdp.ps1"),
       "finalize-template.ps1" = file("./scripts/finalize-template.ps1"),

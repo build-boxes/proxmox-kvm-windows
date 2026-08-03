@@ -11,6 +11,7 @@
 ##     --proxmox-os-user root \
 ##     --moded-iso-name Win2025-SERVER_Moded_Unattended.iso \
 ##     --orig-iso-name Win2025-SERVER_EVAL_x64FRE_en-us.iso \
+##     --win-image-name 'Windows Server 2025 SERVERDATACENTER' \
 ##     --windows-time-zone America/Toronto \
 ##     --proxmox-storage-iso ntfs2tb-iso \
 ##     --administrator-password 'CHANGE_ME' \
@@ -29,6 +30,7 @@ PROXMOX_HOST="192.168.0.18"
 PROXMOX_OS_USER="root"
 WIN2025_MODED_ISONAME="WIN2025-SERVER_Moded_Unattended.iso"
 WIN2025_ORIG_ISONAME="Win2025-SERVER_EVAL_x64FRE_en-us.iso"
+WIN2025_IMAGE_NAME="Windows Server 2025 SERVERDATACENTER"
 WINDOWS_TIME_ZONE="America/Toronto"
 PROXMOX_STORAGE_ISO="local"
 ADMINISTRATOR_PASSWORD="P@ssw0rd!"
@@ -43,6 +45,7 @@ Options (position-independent):
   --proxmox-os-user VALUE           SSH user on Proxmox host
   --moded-iso-name VALUE            Target modified Win2025 ISO name
   --orig-iso-name VALUE             Source/original Win2025 ISO name
+  --win-image-name VALUE            Windows image name from install.wim
   --windows-time-zone VALUE         Windows time zone for autounattend
   --proxmox-storage-iso VALUE       Proxmox ISO storage name
   --administrator-password VALUE    Administrator password for autounattend
@@ -99,6 +102,15 @@ while [[ $# -gt 0 ]]; do
       ;;
     --orig-iso-name=*)
       WIN2025_ORIG_ISONAME="${1#*=}"
+      shift
+      ;;
+    --win-image-name)
+      require_value "$1" "${2:-}"
+      WIN2025_IMAGE_NAME="$2"
+      shift 2
+      ;;
+    --win-image-name=*)
+      WIN2025_IMAGE_NAME="${1#*=}"
       shift
       ;;
     --windows-time-zone)
@@ -165,8 +177,8 @@ echo "****> Starting packer validate..."
 echo "****< Packer validate completed."
 echo "****> Starting ISO rebuild..."
 scp -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null ./scripts/rebuild_Win2025_iso.sh ${PROXMOX_OS_USER}@${PROXMOX_HOST}:/tmp/rebuild_Win2025_iso.sh
-#jinja2 http/Autounattend.xml.pkrtpl -D image_name=${WIN2025_MODED_ISONAME} -D time_zone=${WINDOWS_TIME_ZONE} -D administrator_password=${ADMINISTRATOR_PASSWORD} -D winrm_port=${WINRM_PORT} > /tmp/autounattend.xml
-export image_name=${WIN2025_MODED_ISONAME}
+#jinja2 http/Autounattend.xml.pkrtpl -D image_name='${WIN2025_IMAGE_NAME}' -D time_zone=${WINDOWS_TIME_ZONE} -D administrator_password=${ADMINISTRATOR_PASSWORD} -D winrm_port=${WINRM_PORT} > /tmp/autounattend.xml
+export image_name=${WIN2025_IMAGE_NAME}
 export time_zone=${WINDOWS_TIME_ZONE}
 export administrator_password=${ADMINISTRATOR_PASSWORD}
 export winrm_port=${WINRM_PORT}

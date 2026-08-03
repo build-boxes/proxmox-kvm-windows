@@ -23,6 +23,7 @@ sockets                   = 1
 memory_mb                 = 4096
 disk_size                 = "32G"
 disk_format               = "qcow2"
+disk_bus                  = "sata" # set to "sata" or "scsi" for driver-troubleshooting
 disk_ssd_enabled          = true
 network_bridge            = "vmbr0"
 network_vlan              = ""
