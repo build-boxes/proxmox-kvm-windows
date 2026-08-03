@@ -19,29 +19,37 @@ locals {
 build {
   sources = ["source.proxmox-iso.winserver2025"]
 
-  provisioner "powershell" {
-    environment_vars = local.powershell_env
-    script           = "scripts/install-virtio-guest-tools.ps1"
-  }
+  # provisioner "powershell" {
+  #   environment_vars = local.powershell_env
+  #   script           = "scripts/install-virtio-guest-tools.ps1"
+  # }
 
   provisioner "powershell" {
     environment_vars = local.powershell_env
     script           = "scripts/install-openssh.ps1"
+    timeout          = "85m"
   }
 
   provisioner "powershell" {
     environment_vars = local.powershell_env
     script           = "scripts/enable-rdp.ps1"
+    timeout          = "10m"
+  }
+
+  provisioner "windows-restart" {
+    restart_timeout = "15m"
   }
 
   provisioner "powershell" {
     environment_vars = local.powershell_env
     script           = "scripts/install-cloudbase-init.ps1"
+    timeout          = "10m"
   }
 
   provisioner "powershell" {
     environment_vars = local.powershell_env
     script           = "scripts/finalize-template.ps1"
+    timeout          = "10m"
   }
 
 

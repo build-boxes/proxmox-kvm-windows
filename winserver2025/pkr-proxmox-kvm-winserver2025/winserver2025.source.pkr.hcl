@@ -47,7 +47,7 @@ source "proxmox-iso" "winserver2025" {
   network_adapters {
     bridge   = var.network_bridge
     firewall = var.network_firewall
-    model    = "virtio"
+    model    = var.network_model
     vlan_tag = var.network_vlan == "" ? null : var.network_vlan
   }
 

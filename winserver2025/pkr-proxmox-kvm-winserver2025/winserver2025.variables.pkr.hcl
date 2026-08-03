@@ -147,6 +147,16 @@ variable "network_bridge" {
   default     = "vmbr0"
 }
 
+variable "network_model" {
+  type        = string
+  description = "Virtual NIC model for the guest OS"
+  default     = "e1000"
+  validation {
+    condition     = contains(["e1000", "virtio"], var.network_model)
+    error_message = "Network model must be either e1000 or virtio."
+  }
+}
+
 variable "network_vlan" {
   type        = string
   description = "Optional VLAN tag"

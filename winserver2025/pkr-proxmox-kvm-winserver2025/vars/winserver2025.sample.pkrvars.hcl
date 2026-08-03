@@ -26,6 +26,7 @@ disk_format               = "qcow2"
 disk_bus                  = "sata" # set to "sata" or "scsi" for driver-troubleshooting
 disk_ssd_enabled          = true
 network_bridge            = "vmbr0"
+network_model             = "e1000" # switch to "virtio" after guest VirtIO network drivers are installed
 network_vlan              = ""
 network_firewall          = true
 
