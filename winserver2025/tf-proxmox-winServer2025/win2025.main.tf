@@ -367,7 +367,7 @@ resource "time_sleep" "wait_12_minutes" {
 # }
 
 resource "time_sleep" "wait_2_more_minutes" {
-  depends_on = [proxmox_virtual_environment_vm.clone_edited_template]
+  depends_on = [time_sleep.wait_12_minutes]
   # 2 minutes sleep. Give enough time for winRM service to be ready...
   create_duration = "2m"
 }
