@@ -92,7 +92,7 @@
           <PlainText>true</PlainText>
         </Password>
         <Enabled>true</Enabled>
-        <LogonCount>20</LogonCount>
+        <LogonCount>2</LogonCount>
         <Username>Administrator</Username>
       </AutoLogon>
       <UserAccounts>
@@ -116,7 +116,7 @@
         <SynchronousCommand wcm:action="add">
           <Order>1</Order>
           <Description>Bootstrap WinRM for Packer</Description>
-          <CommandLine>powershell.exe -NoLogo -NoProfile -ExecutionPolicy Bypass -Command "$volume = Get-Volume | Where-Object { $_.FileSystemLabel -eq 'PACKERDEV' } | Select-Object -First 1 -ExpandProperty DriveLetter; if (-not $volume) { throw 'CD Labeled - PACKERDEV - not found' }; &amp; ($volume + ':\bootstrap-winrm.ps1') -WinRMPort ${winrm_port} -LogRoot '${log_root}'"</CommandLine>
+          <CommandLine>powershell.exe -NoLogo -NoProfile -ExecutionPolicy Bypass -Command "$markerRoot = '${log_root}'; if (-not (Test-Path -Path $markerRoot)) { New-Item -Path $markerRoot -ItemType Directory -Force | Out-Null }; New-Item -Path (Join-Path $markerRoot 'firstlogon.started') -ItemType File -Force | Out-Null; $volume = Get-Volume | Where-Object { $_.FileSystemLabel -eq 'PACKERDEV' } | Select-Object -First 1 -ExpandProperty DriveLetter; if (-not $volume) { throw 'CD Labeled - PACKERDEV - not found' }; &amp; ($volume + ':ootstrap-winrm.ps1') -WinRMPort ${winrm_port} -LogRoot '${log_root}'"</CommandLine>
           <RequiresUserInput>false</RequiresUserInput>
         </SynchronousCommand>
         <SynchronousCommand wcm:action="add">

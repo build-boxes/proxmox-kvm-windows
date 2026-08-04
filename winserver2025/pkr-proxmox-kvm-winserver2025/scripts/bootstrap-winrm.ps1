@@ -10,6 +10,7 @@ if (-not (Test-Path -Path $logFolder)) {
 }
 
 $logFile = Join-Path $logFolder "bootstrap-winrm.log"
+$startMarker = Join-Path $logFolder "bootstrap-winrm.started"
 function Write-Log {
     param(
         [string]$Message,
@@ -20,6 +21,8 @@ function Write-Log {
     Add-Content -Path $logFile -Value $line
 }
 
+New-Item -Path $startMarker -ItemType File -Force | Out-Null
+Write-Log "Created startup marker file at $startMarker."
 Write-Log "Starting WinRM bootstrap."
 Write-Log "Configuring WinRM HTTPS listener for Packer."
 

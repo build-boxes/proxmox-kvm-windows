@@ -221,7 +221,7 @@ variable "windows_time_zone" {
 variable "windows_setup_log_root" {
   type        = string
   description = "Directory where Autounattend-triggered PowerShell scripts write logs"
-  default     = "C:\\packer_build_logs.txt"
+  default     = "C:\\packer_build_logs"
 }
 
 variable "winrm_timeout" {
