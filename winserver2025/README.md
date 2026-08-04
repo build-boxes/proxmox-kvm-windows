@@ -72,7 +72,6 @@ The folder [pkr-proxmox-kvm-winserver2025](./pkr-proxmox-kvm-winserver2025) now 
    - `virtio_iso_name`
    - `administrator_password`
 1. Confirm the Windows Server 2025 ISO and VirtIO ISO are already present in the Proxmox ISO storage referenced by `storage_iso`.
-1. http/autounattend.xml.pkrtpl - Edit or generate using MSFT official methods, or look into [SvenGroot's CLI Utility](https://github.com/SvenGroot/GenerateAnswerFile)
 
 ### Run the build
 ```bash

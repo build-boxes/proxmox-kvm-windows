@@ -73,7 +73,7 @@ source "proxmox-iso" "winserver2025" {
 
   additional_iso_files {
     cd_content = {
-      "autounattend.xml" = templatefile("./http/Autounattend.xml.pkrtpl", {image_name = var.winserver2025_image_name, time_zone = var.windows_time_zone , administrator_password = var.administrator_password, winrm_port = var.winrm_port, log_root = var.windows_setup_log_root }),
+      "autounattend.xml" = templatefile("./http/Autounattend.xml.pkrtpl", {image_name = var.winserver2025_image_name, time_zone = var.windows_time_zone , administrator_password = var.administrator_password, winrm_port = var.winrm_port }),
       "bootstrap-winrm.ps1" = file("./scripts/bootstrap-winrm.ps1"),
       "enable-rdp.ps1" = file("./scripts/enable-rdp.ps1"),
       "finalize-template.ps1" = file("./scripts/finalize-template.ps1"),
@@ -101,16 +101,13 @@ source "proxmox-iso" "winserver2025" {
     "<enter><wait><enter><wait><enter><wait><enter>"
   ]
 
-
-  # communicator = "none"
-
-  # # WinRM
+  # WinRM
   communicator          = "winrm"
   winrm_username        = "Administrator"
   winrm_password        = var.administrator_password
   winrm_timeout         = var.winrm_timeout
   winrm_port            = var.winrm_port
   winrm_use_ssl         = true
-  winrm_insecure        = false
-  winrm_use_ntlm        = true
+  winrm_insecure        = true
+  winrm_use_ntlm        = true  
 }

@@ -19,13 +19,46 @@ locals {
 build {
   sources = ["source.proxmox-iso.winserver2025"]
 
-  provisioner "ansible" {
-    # command = "ansible all -i 'localhost,' -m win_ping -u 'Administrator' -e 'ansible_password=${var.administrator_password}' -e 'ansible_connection=winrm' -e 'ansible_winrm_transport=ntlm' -e 'ansible_port=5986' -e 'ansible_winrm_server_cert_validation=ignore'"
-    playbook_file = "./scripts/ansi_playbook_ping.yml"
-    extra_arguments = ["-e", "ansible_winrm_scheme=https", "-e", "ansible_winrm_server_cert_validation=ignore", "-e", "ansible_winrm_transport=ntlm", "-e", "ansible_port=${var.winrm_port}", "-e", "ansible_connection=winrm", "-e", "ansible_user=Administrator", "-e", "ansible_password=${var.administrator_password}"]
-    # environment_vars = local.powershell_env
-    pause_before = "10m"
-    max_retries = 5
-  }  
-  
+  # provisioner "powershell" {
+  #   environment_vars = local.powershell_env
+  #   script           = "scripts/install-virtio-guest-tools.ps1"
+  # }
+
+  provisioner "powershell" {
+    environment_vars = local.powershell_env
+    script           = "scripts/install-openssh.ps1"
+    timeout          = "85m"
+    retry_count     = 17
+    retry_sleep     = "5m"
+  }
+
+  provisioner "powershell" {
+    environment_vars = local.powershell_env
+    script           = "scripts/enable-rdp.ps1"
+    timeout          = "10m"
+    retry_count     = 10
+    retry_sleep     = "1m"
+  }
+
+  provisioner "windows-restart" {
+    restart_timeout = "15m"
+  }
+
+  provisioner "powershell" {
+    environment_vars = local.powershell_env
+    script           = "scripts/install-cloudbase-init.ps1"
+    timeout          = "10m"
+    retry_count     = 10
+    retry_sleep     = "1m"
+  }
+
+  provisioner "powershell" {
+    environment_vars = local.powershell_env
+    script           = "scripts/finalize-template.ps1"
+    timeout          = "10m"
+    retry_count     = 10
+    retry_sleep     = "1m"
+  }
+
+
 }
