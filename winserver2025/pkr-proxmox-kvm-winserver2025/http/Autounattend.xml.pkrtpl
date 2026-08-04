@@ -92,7 +92,7 @@
           <PlainText>true</PlainText>
         </Password>
         <Enabled>true</Enabled>
-        <LogonCount>20</LogonCount>
+        <LogonCount>2</LogonCount>
         <Username>Administrator</Username>
       </AutoLogon>
       <UserAccounts>
